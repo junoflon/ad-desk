@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Header from "@/components/layout/Header";
+import { useApi, useMutation } from "@/lib/hooks";
 import {
   Plus,
   MoreHorizontal,
@@ -69,8 +70,25 @@ const mockBoards: Board[] = [
 
 export default function BoardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [newBoardDesc, setNewBoardDesc] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  // Try API first, fallback to mock data
+  const { data: apiBoards } = useApi<unknown[]>(`/api/boards?_=${refreshKey}`, [refreshKey]);
+  const { mutate: createBoard, loading: creating } = useMutation("/api/boards");
+
+  const boards = apiBoards || mockBoards;
   const folders = [...new Set(mockBoards.filter((b) => b.folder).map((b) => b.folder))];
+
+  const handleCreateBoard = useCallback(async () => {
+    if (!newBoardName.trim()) return;
+    await createBoard({ name: newBoardName, description: newBoardDesc });
+    setNewBoardName("");
+    setNewBoardDesc("");
+    setShowCreateModal(false);
+    setRefreshKey((k) => k + 1);
+  }, [newBoardName, newBoardDesc, createBoard]);
 
   return (
     <>
@@ -202,6 +220,8 @@ export default function BoardPage() {
                   <input
                     type="text"
                     placeholder="예: 2026 봄 캠페인 레퍼런스"
+                    value={newBoardName}
+                    onChange={(e) => setNewBoardName(e.target.value)}
                     className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50"
                   />
                 </div>
@@ -212,6 +232,8 @@ export default function BoardPage() {
                   <textarea
                     placeholder="보드에 대한 간단한 설명을 입력하세요"
                     rows={3}
+                    value={newBoardDesc}
+                    onChange={(e) => setNewBoardDesc(e.target.value)}
                     className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50 resize-none"
                   />
                 </div>
@@ -229,8 +251,12 @@ export default function BoardPage() {
                 >
                   취소
                 </button>
-                <button className="flex-1 py-3 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors">
-                  만들기
+                <button
+                  onClick={handleCreateBoard}
+                  disabled={creating || !newBoardName.trim()}
+                  className="flex-1 py-3 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {creating ? "생성중..." : "만들기"}
                 </button>
               </div>
             </div>
