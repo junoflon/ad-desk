@@ -56,12 +56,6 @@ export default function CreateBoardModal({
               className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50 resize-none"
             />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-text-secondary text-sm">공개 보드</span>
-            <button className="w-10 h-6 bg-border rounded-full relative">
-              <div className="w-4 h-4 bg-text-muted rounded-full absolute top-1 left-1 transition-transform" />
-            </button>
-          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button

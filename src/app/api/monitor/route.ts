@@ -1,17 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api";
-
-const DEMO_USER_EMAIL = "demo@snipit.im";
-
-async function getDemoUser() {
-  return prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
-}
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
-    const user = await getDemoUser();
-    if (!user) return error("User not found", 401);
+    const user = await getCurrentUser();
+    if (!user) return error("로그인이 필요합니다.", 401);
 
     const brands = await prisma.monitorBrand.findMany({
       where: { userId: user.id },
@@ -34,8 +29,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getDemoUser();
-    if (!user) return error("User not found", 401);
+    const user = await getCurrentUser();
+    if (!user) return error("로그인이 필요합니다.", 401);
 
     const body = await request.json();
     const { brandName, platform, brandUrl } = body;

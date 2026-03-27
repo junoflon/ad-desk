@@ -7,11 +7,9 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
-  Eye,
-  BarChart3,
-  ExternalLink,
   Trash2,
   Loader2,
+  Eye,
 } from "lucide-react";
 
 interface MonitorAd {
@@ -261,19 +259,11 @@ export default function MonitorPage() {
                       <p className="text-text-muted text-xs">이번 주</p>
                     </div>
                     <div className="flex gap-2">
-                      <button className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-text-secondary transition-colors">
-                        <Eye size={16} />
-                      </button>
-                      <button className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-text-secondary transition-colors">
-                        <BarChart3 size={16} />
-                      </button>
-                      <button className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-text-secondary transition-colors">
-                        <ExternalLink size={16} />
-                      </button>
                       {apiBrands && (
                         <button
                           onClick={(e) => handleDeleteBrand(brand.id, e)}
                           className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-red-400 transition-colors"
+                          title="삭제"
                         >
                           <Trash2 size={16} />
                         </button>
