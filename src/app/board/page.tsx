@@ -2,15 +2,10 @@
 
 import { useState, useCallback } from "react";
 import Header from "@/components/layout/Header";
+import BoardCard from "@/components/board/BoardCard";
+import CreateBoardModal from "@/components/board/CreateBoardModal";
 import { useApi, useMutation } from "@/lib/hooks";
-import {
-  Plus,
-  MoreHorizontal,
-  FolderOpen,
-  Grid3X3,
-  Lock,
-  Globe,
-} from "lucide-react";
+import { Plus, FolderOpen } from "lucide-react";
 
 interface Board {
   id: string;
@@ -74,8 +69,7 @@ export default function BoardPage() {
   const [newBoardDesc, setNewBoardDesc] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Try API first, fallback to mock data
-  const { data: apiBoards } = useApi<unknown[]>(`/api/boards?_=${refreshKey}`, [refreshKey]);
+  const { data: apiBoards } = useApi<Board[]>(`/api/boards?_=${refreshKey}`, [refreshKey]);
   const { mutate: createBoard, loading: creating } = useMutation("/api/boards");
 
   const boards = apiBoards || mockBoards;
@@ -126,8 +120,7 @@ export default function BoardPage() {
                     <FolderOpen size={16} className="text-primary" />
                     {folder}
                     <span className="text-text-muted text-xs">
-                      (
-                      {mockBoards.filter((b) => b.folder === folder).length})
+                      ({mockBoards.filter((b) => b.folder === folder).length})
                     </span>
                   </button>
                 ))}
@@ -137,51 +130,8 @@ export default function BoardPage() {
 
           {/* Boards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {mockBoards.map((board) => (
-              <div
-                key={board.id}
-                className="bg-bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all hover:-translate-y-1 cursor-pointer group"
-              >
-                {/* Cover */}
-                <div className="aspect-[2/1] bg-bg-card-hover flex items-center justify-center">
-                  <Grid3X3
-                    size={32}
-                    className="text-text-muted opacity-20"
-                  />
-                </div>
-
-                {/* Info */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-text-primary font-semibold group-hover:text-primary transition-colors">
-                      {board.name}
-                    </h3>
-                    <button className="text-text-muted hover:text-text-secondary">
-                      <MoreHorizontal size={16} />
-                    </button>
-                  </div>
-                  <p className="text-text-muted text-sm mb-3 line-clamp-1">
-                    {board.description}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-text-muted">
-                    <div className="flex items-center gap-3">
-                      <span>{board.adCount}개 광고</span>
-                      <span className="flex items-center gap-1">
-                        {board.isPublic ? (
-                          <>
-                            <Globe size={12} /> 공개
-                          </>
-                        ) : (
-                          <>
-                            <Lock size={12} /> 비공개
-                          </>
-                        )}
-                      </span>
-                    </div>
-                    <span>{board.updatedAt}</span>
-                  </div>
-                </div>
-              </div>
+            {boards.map((board) => (
+              <BoardCard key={board.id} board={board} />
             ))}
 
             {/* Create new board card */}
@@ -201,66 +151,15 @@ export default function BoardPage() {
 
         {/* Create Modal */}
         {showCreateModal && (
-          <div
-            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-            onClick={() => setShowCreateModal(false)}
-          >
-            <div
-              className="bg-bg-card border border-border rounded-2xl w-full max-w-md p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-text-primary font-bold text-lg mb-6">
-                새 보드 만들기
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-text-secondary text-sm block mb-1.5">
-                    보드 이름
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="예: 2026 봄 캠페인 레퍼런스"
-                    value={newBoardName}
-                    onChange={(e) => setNewBoardName(e.target.value)}
-                    className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-text-secondary text-sm block mb-1.5">
-                    설명 (선택)
-                  </label>
-                  <textarea
-                    placeholder="보드에 대한 간단한 설명을 입력하세요"
-                    rows={3}
-                    value={newBoardDesc}
-                    onChange={(e) => setNewBoardDesc(e.target.value)}
-                    className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50 resize-none"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary text-sm">공개 보드</span>
-                  <button className="w-10 h-6 bg-border rounded-full relative">
-                    <div className="w-4 h-4 bg-text-muted rounded-full absolute top-1 left-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-border text-text-secondary text-sm font-medium hover:bg-bg-card-hover transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleCreateBoard}
-                  disabled={creating || !newBoardName.trim()}
-                  className="flex-1 py-3 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors disabled:opacity-50"
-                >
-                  {creating ? "생성중..." : "만들기"}
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateBoardModal
+            name={newBoardName}
+            description={newBoardDesc}
+            onNameChange={setNewBoardName}
+            onDescChange={setNewBoardDesc}
+            onSubmit={handleCreateBoard}
+            onClose={() => setShowCreateModal(false)}
+            loading={creating}
+          />
         )}
       </main>
     </>
