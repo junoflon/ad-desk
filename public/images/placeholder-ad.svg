@@ -1,0 +1,8 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" rx="12" fill="#1A1A2E"/>
+  <rect x="1" y="1" width="398" height="398" rx="11" stroke="#2A2A4A" stroke-width="2"/>
+  <rect x="120" y="140" width="160" height="120" rx="8" fill="#25254B"/>
+  <circle cx="170" cy="180" r="20" fill="#6C5CE7" opacity="0.3"/>
+  <path d="M140 240L180 200L210 220L260 180" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <text x="200" y="300" font-family="sans-serif" font-size="14" fill="#6C6C8A" text-anchor="middle">Ad Preview</text>
+</svg>

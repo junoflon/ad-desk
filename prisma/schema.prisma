@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boards         Board[]
+  monitorBrands  MonitorBrand[]
+  searchHistory  SearchHistory[]
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  platform    String   // instagram, facebook, meta
+  brand       String
+  brandLogo   String?
+  imageUrl    String
+  videoUrl    String?
+  copyText    String?
+  category    String?  // 업종
+  format      String?  // 이미지, 비디오, 캐러셀
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  country     String   @default("KR")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  boardAds    BoardAd[]
+  monitorAds  MonitorAd[]
+
+  @@index([brand])
+  @@index([category])
+  @@index([platform])
+}
+
+model Board {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  coverImage  String?
+  isPublic    Boolean  @default(false)
+  userId      String
+  folderId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder   Folder?   @relation(fields: [folderId], references: [id])
+  boardAds BoardAd[]
+
+  @@index([userId])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+
+  boards Board[]
+}
+
+model BoardAd {
+  id      String @id @default(cuid())
+  boardId String
+  adId    String
+  note    String?
+  addedAt DateTime @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  ad    Ad    @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, adId])
+}
+
+model MonitorBrand {
+  id        String   @id @default(cuid())
+  brandName String
+  brandUrl  String?
+  platform  String   @default("meta")
+  userId    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitorAds MonitorAd[]
+
+  @@unique([userId, brandName, platform])
+}
+
+model MonitorAd {
+  id             String   @id @default(cuid())
+  monitorBrandId String
+  adId           String
+  detectedAt     DateTime @default(now())
+
+  monitorBrand MonitorBrand @relation(fields: [monitorBrandId], references: [id], onDelete: Cascade)
+  ad           Ad           @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([monitorBrandId, adId])
+}
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  query     String
+  filters   Json?
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  coverImage  String?
+  category    String
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FaqItem {
+  id        String @id @default(cuid())
+  question  String
+  answer    String
+  category  String @default("general")
+  order     Int    @default(0)
+}
+
+enum Plan {
+  FREE
+  LIGHT
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
