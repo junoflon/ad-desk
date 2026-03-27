@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import { Menu, X, Search, FolderOpen, Radar, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, Search, FolderOpen, Radar, LayoutDashboard } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
@@ -17,7 +16,6 @@ const navItems = [
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session } = useSession();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-bg-dark/80 backdrop-blur-xl border-b border-border">
@@ -27,7 +25,6 @@ export default function Header() {
             Ad Desk
           </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(({ href, label, icon: Icon }) => (
               <Link
@@ -46,30 +43,8 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* User */}
-          <div className="hidden md:flex items-center gap-3">
-            {session?.user ? (
-              <>
-                <span className="text-text-muted text-xs">{session.user.email}</span>
-                <button
-                  onClick={() => signOut()}
-                  className="text-text-muted hover:text-text-secondary transition-colors"
-                  title="로그아웃"
-                >
-                  <LogOut size={15} />
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="text-text-secondary hover:text-text-primary text-sm transition-colors"
-              >
-                로그인
-              </Link>
-            )}
-          </div>
+          <div className="hidden md:block w-20" />
 
-          {/* Mobile menu button */}
           <button
             className="md:hidden text-text-secondary"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -78,7 +53,6 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Nav */}
         {mobileOpen && (
           <div className="md:hidden pb-3 border-t border-border mt-1 pt-3">
             <nav className="flex flex-col gap-1">
@@ -98,23 +72,6 @@ export default function Header() {
                   {label}
                 </Link>
               ))}
-              {session?.user ? (
-                <button
-                  onClick={() => signOut()}
-                  className="flex items-center gap-2 px-3 py-2 text-text-muted text-sm"
-                >
-                  <LogOut size={15} />
-                  로그아웃
-                </button>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-text-secondary text-sm"
-                >
-                  로그인
-                </Link>
-              )}
             </nav>
           </div>
         )}
