@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "스니핏 - 찾고싶을 때 찾아지는 광고 레퍼런스",
-  description:
-    "마케터를 위한 AI 기반 광고 레퍼런스 검색, 경쟁사 모니터링, 보드 큐레이션 플랫폼",
-  keywords: ["광고 레퍼런스", "마케팅", "경쟁사 분석", "광고 검색", "SNS 광고"],
+  title: "Ad Desk - 광고 소재 관리 시스템",
+  description: "인하우스 광고 소재 검색, 경쟁사 모니터링, 레퍼런스 관리 도구",
 };
 
 export default function RootLayout({

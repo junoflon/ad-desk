@@ -97,9 +97,9 @@ function SearchPageContent() {
   return (
     <>
       <Header />
-      <main className="pt-20 min-h-screen bg-bg-dark">
+      <main className="pt-14 min-h-screen bg-bg-dark">
         {/* Search Bar */}
-        <div className="sticky top-16 z-40 bg-bg-dark/95 backdrop-blur-xl border-b border-border">
+        <div className="sticky top-14 z-40 bg-bg-dark/95 backdrop-blur-xl border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <SearchBar
               query={query}

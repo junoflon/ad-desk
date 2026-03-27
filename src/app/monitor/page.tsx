@@ -150,7 +150,7 @@ export default function MonitorPage() {
   return (
     <>
       <Header />
-      <main className="pt-20 min-h-screen bg-bg-dark">
+      <main className="pt-14 min-h-screen bg-bg-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -159,7 +159,7 @@ export default function MonitorPage() {
                 경쟁사 모니터링
               </h1>
               <p className="text-text-muted text-sm mt-1">
-                등록한 브랜드의 광고를 자동으로 수집하고 분석합니다
+                등록한 브랜드의 광고 현황을 추적합니다
               </p>
             </div>
             <button

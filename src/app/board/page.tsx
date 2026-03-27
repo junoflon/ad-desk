@@ -87,14 +87,14 @@ export default function BoardPage() {
   return (
     <>
       <Header />
-      <main className="pt-20 min-h-screen bg-bg-dark">
+      <main className="pt-14 min-h-screen bg-bg-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl font-bold text-text-primary">내 보드</h1>
               <p className="text-text-muted text-sm mt-1">
-                저장한 광고 레퍼런스를 보드별로 관리하세요
+                광고 소재를 보드별로 분류하여 관리
               </p>
             </div>
             <button
