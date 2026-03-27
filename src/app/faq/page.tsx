@@ -3,10 +3,16 @@
 import { useState } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import { ChevronDown } from "lucide-react";
+import { useApi } from "@/lib/hooks";
+import { ChevronDown, Loader2 } from "lucide-react";
 import clsx from "clsx";
 
-const faqs = [
+interface FaqSection {
+  category: string;
+  items: { q: string; a: string }[];
+}
+
+const fallbackFaqs: FaqSection[] = [
   {
     category: "서비스 소개",
     items: [
@@ -59,6 +65,9 @@ const faqs = [
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
 
+  const { data: apiFaqs, loading } = useApi<FaqSection[]>("/api/faq");
+  const faqs = apiFaqs || fallbackFaqs;
+
   const toggleItem = (key: string) => {
     setOpenItems((prev) => {
       const next = new Set(prev);
@@ -79,6 +88,12 @@ export default function FAQPage() {
               자주 묻는 질문을 확인해보세요
             </p>
           </div>
+
+          {loading && (
+            <div className="flex justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-primary" />
+            </div>
+          )}
 
           <div className="space-y-10">
             {faqs.map((section) => (
