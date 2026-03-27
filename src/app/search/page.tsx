@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Header from "@/components/layout/Header";
+import { useApi, useMutation } from "@/lib/hooks";
 import {
   Search,
   SlidersHorizontal,
@@ -13,62 +14,115 @@ import {
   Bookmark,
   X,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import {
-  mockAds,
   categories,
   platforms,
   formats,
   sortOptions,
-  type MockAd,
 } from "@/lib/mockData";
 import clsx from "clsx";
+
+interface Ad {
+  id: string;
+  platform: string;
+  brand: string;
+  brandLogo?: string;
+  imageUrl: string;
+  copyText?: string;
+  category?: string;
+  format?: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  country: string;
+}
+
+interface AdsResponse {
+  ads: Ad[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface BoardItem {
+  id: string;
+  name: string;
+}
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
   const [query, setQuery] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedPlatform, setSelectedPlatform] = useState("전체");
   const [selectedFormat, setSelectedFormat] = useState("전체");
   const [sortBy, setSortBy] = useState("latest");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedAd, setSelectedAd] = useState<MockAd | null>(null);
+  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [page, setPage] = useState(1);
+  const [showBoardModal, setShowBoardModal] = useState(false);
+  const [savingAdId, setSavingAdId] = useState<string | null>(null);
 
-  const filteredAds = useMemo(() => {
-    let result = [...mockAds];
+  // Build API URL with filters
+  const apiUrl = `/api/ads?page=${page}&limit=20&sort=${sortBy}${
+    searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""
+  }${selectedCategory !== "전체" ? `&category=${encodeURIComponent(selectedCategory)}` : ""}${
+    selectedPlatform !== "전체" ? `&platform=${encodeURIComponent(selectedPlatform)}` : ""
+  }${selectedFormat !== "전체" ? `&format=${encodeURIComponent(selectedFormat)}` : ""}`;
 
-    if (query) {
-      const q = query.toLowerCase();
-      result = result.filter(
-        (ad) =>
-          ad.brand.toLowerCase().includes(q) ||
-          ad.copyText.toLowerCase().includes(q) ||
-          ad.category.toLowerCase().includes(q)
-      );
-    }
+  const { data, loading } = useApi<AdsResponse>(apiUrl, [
+    page, sortBy, searchQuery, selectedCategory, selectedPlatform, selectedFormat,
+  ]);
 
-    if (selectedCategory !== "전체") {
-      result = result.filter((ad) => ad.category === selectedCategory);
-    }
-    if (selectedPlatform !== "전체") {
-      result = result.filter((ad) => ad.platform === selectedPlatform);
-    }
-    if (selectedFormat !== "전체") {
-      result = result.filter((ad) => ad.format === selectedFormat);
-    }
+  const { data: boards } = useApi<BoardItem[]>("/api/boards");
+  const { mutate: saveToBoard } = useMutation("/api/boards/{id}/ads");
 
-    result.sort((a, b) => {
-      if (sortBy === "likes") return b.likes - a.likes;
-      if (sortBy === "comments") return b.comments - a.comments;
-      return (
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      );
-    });
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(query);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-    return result;
-  }, [query, selectedCategory, selectedPlatform, selectedFormat, sortBy]);
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedPlatform, selectedFormat, sortBy]);
+
+  const ads = data?.ads || [];
+  const pagination = data?.pagination;
+
+  const handleSaveToBoard = useCallback(
+    async (boardId: string) => {
+      if (!savingAdId) return;
+      await fetch(`/api/boards/${boardId}/ads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adId: savingAdId }),
+      });
+      setShowBoardModal(false);
+      setSavingAdId(null);
+    },
+    [savingAdId]
+  );
+
+  const openBoardModal = (adId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavingAdId(adId);
+    setShowBoardModal(true);
+  };
 
   return (
     <>
@@ -82,7 +136,7 @@ function SearchPageContent() {
                 <Search size={18} className="text-text-muted ml-4" />
                 <input
                   type="text"
-                  placeholder="이미지, 카피, 분위기로 검색해보세요..."
+                  placeholder="브랜드, 카피, 업종으로 검색해보세요..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="flex-1 bg-transparent text-text-primary placeholder:text-text-muted px-3 py-3 outline-none text-sm"
@@ -187,10 +241,19 @@ function SearchPageContent() {
           {/* Sort & Count */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-text-muted text-sm">
-              <span className="text-text-primary font-medium">
-                {filteredAds.length}
-              </span>
-              개의 광고 레퍼런스
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  검색중...
+                </span>
+              ) : (
+                <>
+                  <span className="text-text-primary font-medium">
+                    {pagination?.total || ads.length}
+                  </span>
+                  개의 광고 레퍼런스
+                </>
+              )}
             </p>
             <div className="relative">
               <select
@@ -213,7 +276,7 @@ function SearchPageContent() {
 
           {/* Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredAds.map((ad) => (
+            {ads.map((ad) => (
               <div
                 key={ad.id}
                 onClick={() => setSelectedAd(ad)}
@@ -248,9 +311,7 @@ function SearchPageContent() {
 
                   {/* Save button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
+                    onClick={(e) => openBoardModal(ad.id, e)}
                     className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/50"
                   >
                     <Bookmark size={14} className="text-white" />
@@ -301,7 +362,30 @@ function SearchPageContent() {
             ))}
           </div>
 
-          {filteredAds.length === 0 && (
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-4 py-2 rounded-lg border border-border text-text-secondary text-sm hover:border-border-light disabled:opacity-30 transition-colors"
+              >
+                이전
+              </button>
+              <span className="text-text-muted text-sm px-3">
+                {page} / {pagination.totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                disabled={page >= pagination.totalPages}
+                className="px-4 py-2 rounded-lg border border-border text-text-secondary text-sm hover:border-border-light disabled:opacity-30 transition-colors"
+              >
+                다음
+              </button>
+            </div>
+          )}
+
+          {!loading && ads.length === 0 && (
             <div className="text-center py-20">
               <Search size={48} className="text-text-muted mx-auto mb-4 opacity-30" />
               <p className="text-text-secondary mb-2">검색 결과가 없습니다</p>
@@ -408,9 +492,11 @@ function SearchPageContent() {
                   <div className="flex justify-between">
                     <span className="text-text-muted">게재 기간</span>
                     <span className="text-text-secondary">
-                      {selectedAd.startDate}
+                      {selectedAd.startDate
+                        ? new Date(selectedAd.startDate).toLocaleDateString("ko-KR")
+                        : "-"}
                       {selectedAd.endDate
-                        ? ` ~ ${selectedAd.endDate}`
+                        ? ` ~ ${new Date(selectedAd.endDate).toLocaleDateString("ko-KR")}`
                         : " ~ 진행중"}
                     </span>
                   </div>
@@ -436,7 +522,13 @@ function SearchPageContent() {
 
                 {/* Actions */}
                 <div className="flex gap-3 mt-6">
-                  <button className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSavingAdId(selectedAd.id);
+                      setShowBoardModal(true);
+                    }}
+                    className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                  >
                     <Bookmark size={16} />
                     보드에 저장
                   </button>
@@ -445,6 +537,52 @@ function SearchPageContent() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save to Board Modal */}
+        {showBoardModal && (
+          <div
+            className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4"
+            onClick={() => {
+              setShowBoardModal(false);
+              setSavingAdId(null);
+            }}
+          >
+            <div
+              className="bg-bg-card border border-border rounded-2xl w-full max-w-sm p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-text-primary font-bold text-lg mb-4">
+                보드에 저장
+              </h3>
+              {boards && boards.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {boards.map((board) => (
+                    <button
+                      key={board.id}
+                      onClick={() => handleSaveToBoard(board.id)}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-bg-dark border border-border hover:border-primary/30 text-text-primary text-sm transition-colors"
+                    >
+                      {board.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-text-muted text-sm py-4 text-center">
+                  보드가 없습니다. 먼저 보드를 생성해주세요.
+                </p>
+              )}
+              <button
+                onClick={() => {
+                  setShowBoardModal(false);
+                  setSavingAdId(null);
+                }}
+                className="w-full mt-4 py-2.5 rounded-xl border border-border text-text-secondary text-sm hover:bg-bg-card-hover transition-colors"
+              >
+                취소
+              </button>
             </div>
           </div>
         )}

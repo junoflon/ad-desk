@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Header from "@/components/layout/Header";
+import { useApi, useMutation } from "@/lib/hooks";
 import {
   Plus,
   TrendingUp,
@@ -9,9 +10,35 @@ import {
   Eye,
   BarChart3,
   ExternalLink,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
-interface MonitorBrand {
+interface MonitorAd {
+  id: string;
+  ad: {
+    id: string;
+    brand: string;
+    platform: string;
+    imageUrl: string;
+    copyText?: string;
+    isActive: boolean;
+  };
+  detectedAt: string;
+}
+
+interface ApiBrand {
+  id: string;
+  brandName: string;
+  platform: string;
+  brandUrl?: string;
+  isActive: boolean;
+  createdAt: string;
+  _count?: { monitorAds: number };
+  monitorAds?: MonitorAd[];
+}
+
+interface MockBrand {
   id: string;
   name: string;
   platform: string;
@@ -22,7 +49,7 @@ interface MonitorBrand {
   lastDetected: string;
 }
 
-const mockBrands: MonitorBrand[] = [
+const mockBrands: MockBrand[] = [
   {
     id: "1",
     name: "올리브영",
@@ -67,9 +94,58 @@ const mockBrands: MonitorBrand[] = [
 
 export default function MonitorPage() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [brandName, setBrandName] = useState("");
+  const [brandPlatform, setBrandPlatform] = useState("instagram");
+  const [brandUrl, setBrandUrl] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const totalActive = mockBrands.reduce((sum, b) => sum + b.activeAds, 0);
-  const totalNew = mockBrands.reduce((sum, b) => sum + b.newAdsThisWeek, 0);
+  const { data: apiBrands, loading } = useApi<ApiBrand[]>(
+    `/api/monitor?_=${refreshKey}`,
+    [refreshKey]
+  );
+  const { mutate: addBrand, loading: adding, error: addError } = useMutation("/api/monitor");
+
+  // Map API brands to display format, fallback to mock
+  const brands: MockBrand[] = apiBrands
+    ? apiBrands.map((b) => ({
+        id: b.id,
+        name: b.brandName,
+        platform: b.platform,
+        totalAds: b._count?.monitorAds || 0,
+        activeAds: b.monitorAds?.filter((ma) => ma.ad.isActive).length || 0,
+        newAdsThisWeek: 0,
+        trend: "stable" as const,
+        lastDetected: b.monitorAds?.[0]
+          ? new Date(b.monitorAds[0].detectedAt).toLocaleDateString("ko-KR")
+          : "-",
+      }))
+    : mockBrands;
+
+  const totalActive = brands.reduce((sum, b) => sum + b.activeAds, 0);
+  const totalNew = brands.reduce((sum, b) => sum + b.newAdsThisWeek, 0);
+
+  const handleAddBrand = useCallback(async () => {
+    if (!brandName.trim()) return;
+    await addBrand({
+      brandName: brandName.trim(),
+      platform: brandPlatform,
+      brandUrl: brandUrl || undefined,
+    });
+    setBrandName("");
+    setBrandPlatform("instagram");
+    setBrandUrl("");
+    setShowAddModal(false);
+    setRefreshKey((k) => k + 1);
+  }, [brandName, brandPlatform, brandUrl, addBrand]);
+
+  const handleDeleteBrand = useCallback(
+    async (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      await fetch(`/api/monitor/${id}`, { method: "DELETE" });
+      setRefreshKey((k) => k + 1);
+    },
+    []
+  );
 
   return (
     <>
@@ -100,7 +176,7 @@ export default function MonitorPage() {
             <div className="bg-bg-card border border-border rounded-2xl p-5">
               <p className="text-text-muted text-xs mb-1">모니터링 브랜드</p>
               <p className="text-2xl font-bold text-text-primary">
-                {mockBrands.length}
+                {brands.length}
               </p>
             </div>
             <div className="bg-bg-card border border-border rounded-2xl p-5">
@@ -116,14 +192,21 @@ export default function MonitorPage() {
             <div className="bg-bg-card border border-border rounded-2xl p-5">
               <p className="text-text-muted text-xs mb-1">총 수집 광고</p>
               <p className="text-2xl font-bold text-text-primary">
-                {mockBrands.reduce((sum, b) => sum + b.totalAds, 0)}
+                {brands.reduce((sum, b) => sum + b.totalAds, 0)}
               </p>
             </div>
           </div>
 
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-primary" />
+            </div>
+          )}
+
           {/* Brand list */}
           <div className="space-y-4">
-            {mockBrands.map((brand) => (
+            {brands.map((brand) => (
               <div
                 key={brand.id}
                 className="bg-bg-card border border-border rounded-2xl p-6 hover:border-primary/30 transition-colors cursor-pointer"
@@ -187,6 +270,14 @@ export default function MonitorPage() {
                       <button className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-text-secondary transition-colors">
                         <ExternalLink size={16} />
                       </button>
+                      {apiBrands && (
+                        <button
+                          onClick={(e) => handleDeleteBrand(brand.id, e)}
+                          className="p-2 rounded-lg bg-bg-card-hover text-text-muted hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -215,6 +306,16 @@ export default function MonitorPage() {
               </div>
             ))}
           </div>
+
+          {!loading && brands.length === 0 && (
+            <div className="text-center py-20">
+              <Eye size={48} className="text-text-muted mx-auto mb-4 opacity-30" />
+              <p className="text-text-secondary mb-2">모니터링 중인 브랜드가 없습니다</p>
+              <p className="text-text-muted text-sm">
+                브랜드를 추가하여 경쟁사 광고를 추적해보세요.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Add Brand Modal */}
@@ -230,6 +331,11 @@ export default function MonitorPage() {
               <h2 className="text-text-primary font-bold text-lg mb-6">
                 브랜드 추가
               </h2>
+              {addError && (
+                <p className="text-red-400 text-sm mb-4 bg-red-500/10 px-3 py-2 rounded-lg">
+                  {addError}
+                </p>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="text-text-secondary text-sm block mb-1.5">
@@ -238,6 +344,8 @@ export default function MonitorPage() {
                   <input
                     type="text"
                     placeholder="예: 올리브영"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
                     className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50"
                   />
                 </div>
@@ -245,10 +353,14 @@ export default function MonitorPage() {
                   <label className="text-text-secondary text-sm block mb-1.5">
                     플랫폼
                   </label>
-                  <select className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-secondary text-sm outline-none focus:border-primary/50">
-                    <option>Instagram</option>
-                    <option>Facebook</option>
-                    <option>Meta (전체)</option>
+                  <select
+                    value={brandPlatform}
+                    onChange={(e) => setBrandPlatform(e.target.value)}
+                    className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-secondary text-sm outline-none focus:border-primary/50"
+                  >
+                    <option value="instagram">Instagram</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="meta">Meta (전체)</option>
                   </select>
                 </div>
                 <div>
@@ -258,6 +370,8 @@ export default function MonitorPage() {
                   <input
                     type="url"
                     placeholder="https://instagram.com/oliveyoung"
+                    value={brandUrl}
+                    onChange={(e) => setBrandUrl(e.target.value)}
                     className="w-full bg-bg-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm placeholder:text-text-muted outline-none focus:border-primary/50"
                   />
                 </div>
@@ -269,8 +383,12 @@ export default function MonitorPage() {
                 >
                   취소
                 </button>
-                <button className="flex-1 py-3 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors">
-                  추가하기
+                <button
+                  onClick={handleAddBrand}
+                  disabled={adding || !brandName.trim()}
+                  className="flex-1 py-3 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {adding ? "추가중..." : "추가하기"}
                 </button>
               </div>
             </div>
