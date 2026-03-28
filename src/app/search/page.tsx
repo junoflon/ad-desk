@@ -10,7 +10,7 @@ import BoardSelectModal from "@/components/common/BoardSelectModal";
 import SearchBar from "@/components/search/SearchBar";
 import FilterPanel from "@/components/search/FilterPanel";
 import { useApi } from "@/lib/hooks";
-import { Search, ChevronDown, Loader2, Sparkles, Tag } from "lucide-react";
+import { Search, ChevronDown, Loader2, Sparkles, Tag, Download } from "lucide-react";
 import { sortOptions } from "@/lib/mockData";
 import type { Ad } from "@/components/common/AdCard";
 
@@ -255,6 +255,17 @@ function SearchPageContent() {
                 </>
               )}
             </p>
+            <div className="flex items-center gap-3">
+              {ads.length > 0 && (
+                <a
+                  href={`/api/export?type=ads${activeQuery ? `&q=${encodeURIComponent(activeQuery)}` : ""}`}
+                  className="flex items-center gap-1.5 text-text-muted hover:text-text-secondary text-xs transition-colors"
+                  download
+                >
+                  <Download size={13} />
+                  CSV
+                </a>
+              )}
             {!isAiMode && (
               <div className="relative">
                 <select
@@ -274,6 +285,7 @@ function SearchPageContent() {
                 />
               </div>
             )}
+            </div>
           </div>
 
           {/* Grid */}
