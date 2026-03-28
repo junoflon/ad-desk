@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api";
 import { searchMetaAds, metaAdToDbFormat } from "@/lib/meta";
+import { notifyCollectionComplete } from "@/lib/notify";
 
 /**
  * POST /api/collect/monitor
@@ -89,6 +90,10 @@ export async function POST() {
     }
 
     const totalNew = results.reduce((sum, r) => sum + r.newAds, 0);
+
+    // 신규 광고 알림
+    await notifyCollectionComplete(results);
+
     return success({
       message: `${brands.length}개 브랜드 스캔 완료, ${totalNew}개 신규 광고`,
       results,

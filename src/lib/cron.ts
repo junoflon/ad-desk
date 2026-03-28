@@ -13,6 +13,7 @@
  */
 
 import cron, { type ScheduledTask } from "node-cron";
+import { notifyCollectionComplete } from "@/lib/notify";
 
 let task: ScheduledTask | null = null;
 let lastRun: Date | null = null;
@@ -32,6 +33,11 @@ async function runCollection() {
       ? `성공: ${data.data?.message}`
       : `실패: ${data.error}`;
     console.log(`[CRON] ${lastResult}`);
+
+    // 알림 전송
+    if (data.success && data.data?.results) {
+      await notifyCollectionComplete(data.data.results);
+    }
   } catch (e) {
     lastRun = new Date();
     lastResult = `에러: ${e instanceof Error ? e.message : e}`;

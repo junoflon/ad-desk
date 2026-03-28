@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import DashboardCharts from "@/components/common/DashboardCharts";
 import { useApi } from "@/lib/hooks";
 import {
   Search,
@@ -41,6 +42,14 @@ interface MonitorBrand {
   _count?: { monitorAds: number };
 }
 
+interface StatsData {
+  byCategory: { name: string; value: number }[];
+  byPlatform: { name: string; value: number }[];
+  byFormat: { name: string; value: number }[];
+  status: { active: number; inactive: number };
+  daily: { date: string; count: number }[];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -48,6 +57,7 @@ export default function DashboardPage() {
   const { data: adsData } = useApi<AdsResponse>("/api/ads?limit=5&sort=latest");
   const { data: boards } = useApi<Board[]>("/api/boards");
   const { data: monitors } = useApi<MonitorBrand[]>("/api/monitor");
+  const { data: stats } = useApi<StatsData>("/api/stats");
 
   const recentAds = adsData?.ads || [];
   const totalAds = adsData?.pagination?.total || 0;
@@ -122,6 +132,9 @@ export default function DashboardPage() {
               <p className="text-text-muted text-xs mt-0.5">모니터링 브랜드</p>
             </Link>
           </div>
+
+          {/* Charts */}
+          {stats && <div className="mb-10"><DashboardCharts data={stats} /></div>}
 
           {/* Recent Ads */}
           <div className="mb-10">
