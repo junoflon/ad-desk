@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (!user) return error("로그인이 필요합니다.", 401);
 
     const body = await request.json();
-    const { brandName, platform, brandUrl } = body;
+    const { brandName, platform, brandUrl, categoryId } = body;
 
     if (!brandName) return error("브랜드명을 입력해주세요.");
 
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         brandName,
         platform: platform || "meta",
         brandUrl: brandUrl || null,
+        categoryId: categoryId || null,
         userId: user.id,
       },
     });

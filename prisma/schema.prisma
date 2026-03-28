@@ -17,9 +17,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  boards         Board[]
-  monitorBrands  MonitorBrand[]
-  searchHistory  SearchHistory[]
+  boards            Board[]
+  monitorCategories MonitorCategory[]
+  monitorBrands     MonitorBrand[]
+  searchHistory     SearchHistory[]
 }
 
 model Ad {
@@ -32,6 +33,7 @@ model Ad {
   copyText    String?
   category    String?  // 업종
   format      String?  // 이미지, 비디오, 캐러셀
+  contentType String?  // post, reels, story, carousel
   likes       Int      @default(0)
   comments    Int      @default(0)
   shares      Int      @default(0)
@@ -48,6 +50,7 @@ model Ad {
   @@index([brand])
   @@index([category])
   @@index([platform])
+  @@index([contentType])
 }
 
 model Board {
@@ -90,19 +93,49 @@ model BoardAd {
   @@unique([boardId, adId])
 }
 
-model MonitorBrand {
+model MonitorCategory {
   id        String   @id @default(cuid())
-  brandName String
-  brandUrl  String?
-  platform  String   @default("meta")
+  name      String
+  color     String   @default("#3B82F6")
   userId    String
-  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brands MonitorBrand[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model MonitorBrand {
+  id         String   @id @default(cuid())
+  brandName  String
+  brandUrl   String?
+  platform   String   @default("meta")
+  userId     String
+  categoryId String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   MonitorCategory?  @relation(fields: [categoryId], references: [id])
   monitorAds MonitorAd[]
+  followers  FollowerSnapshot[]
 
   @@unique([userId, brandName, platform])
+}
+
+model FollowerSnapshot {
+  id             String   @id @default(cuid())
+  monitorBrandId String
+  followers      Int
+  following      Int      @default(0)
+  posts          Int      @default(0)
+  recordedAt     DateTime @default(now())
+
+  monitorBrand MonitorBrand @relation(fields: [monitorBrandId], references: [id], onDelete: Cascade)
+
+  @@index([monitorBrandId, recordedAt])
 }
 
 model MonitorAd {
