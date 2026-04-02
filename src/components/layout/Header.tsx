@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Search, FolderOpen, Radar, LayoutDashboard } from "lucide-react";
+import { Menu, X, Search, FolderOpen, Radar, LayoutDashboard, Aperture } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/search", label: "광고 검색", icon: Search },
   { href: "/board", label: "보드", icon: FolderOpen },
   { href: "/monitor", label: "모니터링", icon: Radar },
+  { href: "/instagram", label: "Instagram", icon: Aperture },
 ];
 
 export default function Header() {

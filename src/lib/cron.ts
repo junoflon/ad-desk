@@ -24,14 +24,31 @@ const SCHEDULE = "0 */6 * * *"; // 6시간마다
 async function runCollection() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    // 1) 기존 Meta 광고 수집
     const res = await fetch(`${baseUrl}/api/collect/monitor`, {
       method: "POST",
     });
     const data = await res.json();
+
+    // 2) Instagram 게시물 수집
+    let igResult = { success: false, data: null as { message?: string } | null };
+    try {
+      const igRes = await fetch(`${baseUrl}/api/instagram/collect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      igResult = await igRes.json();
+    } catch (igErr) {
+      console.error(`[CRON] Instagram 수집 실패:`, igErr);
+    }
+
     lastRun = new Date();
-    lastResult = data.success
-      ? `성공: ${data.data?.message}`
-      : `실패: ${data.error}`;
+    lastResult = [
+      data.success ? `광고: ${data.data?.message}` : `광고 실패: ${data.error}`,
+      igResult.success ? `인스타: ${igResult.data?.message}` : "인스타: 스킵/실패",
+    ].join(" | ");
     console.log(`[CRON] ${lastResult}`);
 
     // 알림 전송

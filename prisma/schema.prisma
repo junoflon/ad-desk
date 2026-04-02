@@ -108,19 +108,22 @@ model MonitorCategory {
 }
 
 model MonitorBrand {
-  id         String   @id @default(cuid())
-  brandName  String
-  brandUrl   String?
-  platform   String   @default("meta")
-  userId     String
-  categoryId String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id              String   @id @default(cuid())
+  brandName       String
+  brandUrl        String?
+  platform        String   @default("meta")
+  instagramHandle String?
+  userId          String
+  categoryId      String?
+  isActive        Boolean  @default(true)
+  lastCrawledAt   DateTime?
+  createdAt       DateTime @default(now())
 
-  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category   MonitorCategory?  @relation(fields: [categoryId], references: [id])
-  monitorAds MonitorAd[]
-  followers  FollowerSnapshot[]
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       MonitorCategory?  @relation(fields: [categoryId], references: [id])
+  monitorAds     MonitorAd[]
+  followers      FollowerSnapshot[]
+  instagramPosts InstagramPost[]
 
   @@unique([userId, brandName, platform])
 }
@@ -148,6 +151,26 @@ model MonitorAd {
   ad           Ad           @relation(fields: [adId], references: [id], onDelete: Cascade)
 
   @@unique([monitorBrandId, adId])
+}
+
+model InstagramPost {
+  id             String   @id @default(cuid())
+  monitorBrandId String
+  shortcode      String
+  caption        String?
+  imageUrl       String?
+  videoUrl       String?
+  contentType    String   @default("post") // post, reels, carousel
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  postedAt       DateTime?
+  collectedAt    DateTime @default(now())
+
+  monitorBrand MonitorBrand @relation(fields: [monitorBrandId], references: [id], onDelete: Cascade)
+
+  @@unique([monitorBrandId, shortcode])
+  @@index([monitorBrandId, collectedAt])
+  @@index([likes(sort: Desc)])
 }
 
 model SearchHistory {
